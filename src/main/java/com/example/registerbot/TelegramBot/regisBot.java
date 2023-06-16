@@ -1,5 +1,7 @@
 package com.example.registerbot.TelegramBot;
 
+import com.cloudinary.*;
+import com.cloudinary.utils.ObjectUtils;
 import com.example.registerbot.Model.UserRegistration;
 import com.example.registerbot.Service.EmailVerificationService;
 import com.mongodb.MongoClient;
@@ -10,15 +12,20 @@ import com.mongodb.client.model.Filters;
 import jakarta.mail.MessagingException;
 import org.bson.Document;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.GetFile;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
-import org.telegram.telegrambots.meta.api.objects.Message;
-import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.*;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -112,6 +119,45 @@ public class regisBot extends TelegramLongPollingBot {
 
         //Check if the message is photo
         else if (update.getMessage().hasPhoto()) {
+            String path = null;
+            List<PhotoSize> photos = update.getMessage().getPhoto();
+            String fileId = photos.stream()
+                    .sorted(Comparator.comparing(PhotoSize::getFileSize).reversed())
+                    .findFirst()
+                    .orElse(null).getFileId();
+            GetFile getFile = new GetFile();
+            getFile.setFileId(fileId);
+
+            try {
+                File file = execute(getFile);
+                InputStream is = new URL("https://api.telegram.org/file/bot" + getBotToken() + "/" + file.getFilePath()).openStream();
+                Files.copy(is, Paths.get("Domain_Certificate/domain-certificate.jpg"), StandardCopyOption.REPLACE_EXISTING);
+                path = String.valueOf(Paths.get("domain-certificate.jpg"));
+            }
+
+            catch (TelegramApiException | IOException e) {
+                e.printStackTrace();
+            }
+            
+            Cloudinary cloudinary = new Cloudinary(ObjectUtils.asMap(
+                    "cloud_name", "dzgdczkjk",
+                    "api_key", "451129743528376",
+                    "api_secret", "CLrQi7kqM7DPrA5qmDbBkhNbk7E",
+                    "secure", true));
+
+            try
+            {
+                Map uploadResult = cloudinary.uploader().upload(path, ObjectUtils.emptyMap());
+                System.out.println(uploadResult.get("url"));
+            }
+
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+
+            
+
             sendMessage.setChatId(chatID);
             sendMessage.setText("Your domain certificate has been received. Please wait for verification");
         }
