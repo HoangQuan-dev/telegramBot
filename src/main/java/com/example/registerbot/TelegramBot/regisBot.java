@@ -29,7 +29,7 @@ import static com.example.registerbot.Model.connectDB.mongoUri;
 public class regisBot extends TelegramLongPollingBot {
 
     //region Telegram Bot ConnectDB
-    static MongoClientURI uri = new MongoClientURI(mongoUri);
+    static MongoClientURI uri = new MongoClientURI("mongodb+srv://quanphamlsc:quan_2002@chatbot.trqhh6o.mongodb.net/testDB");
     static MongoClient client = new MongoClient(uri);
     static MongoDatabase database = client.getDatabase("testDB");
     static MongoCollection<Document> userCollection = database.getCollection(UserRegistration.USER_REGISTRATION);
