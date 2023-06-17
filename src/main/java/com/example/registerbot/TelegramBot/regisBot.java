@@ -9,6 +9,7 @@ import com.mongodb.MongoClientURI;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
+import io.github.cdimascio.dotenv.Dotenv;
 import jakarta.mail.MessagingException;
 import org.bson.Document;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -22,8 +23,10 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
@@ -44,6 +47,8 @@ public class regisBot extends TelegramLongPollingBot {
     //endregion
     public static String chatID;
     public static UserRegistration userRegis = new UserRegistration();
+
+    Dotenv dotenv = Dotenv.load();
 
     @Override
     public String getBotToken() {
@@ -121,29 +126,24 @@ public class regisBot extends TelegramLongPollingBot {
         else if (update.getMessage().hasPhoto()) {
             String path = null;
             List<PhotoSize> photos = update.getMessage().getPhoto();
-            String fileId = photos.stream()
-                    .sorted(Comparator.comparing(PhotoSize::getFileSize).reversed())
-                    .findFirst()
-                    .orElse(null).getFileId();
+            String fileId = Objects.requireNonNull(photos.stream().max(Comparator.comparing(PhotoSize::getFileSize))
+                    .orElse(null)).getFileId();
             GetFile getFile = new GetFile();
             getFile.setFileId(fileId);
 
             try {
                 File file = execute(getFile);
-                InputStream is = new URL("https://api.telegram.org/file/bot" + getBotToken() + "/" + file.getFilePath()).openStream();
-                Files.copy(is, Paths.get("Domain_Certificate/domain-certificate.jpg"), StandardCopyOption.REPLACE_EXISTING);
-                path = String.valueOf(Paths.get("domain-certificate.jpg"));
+                path = String.valueOf(new URL("https://api.telegram.org/file/bot" + getBotToken() + "/" + file.getFilePath()));
             }
 
-            catch (TelegramApiException | IOException e) {
+            catch (TelegramApiException e) {
                 e.printStackTrace();
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
             }
-            
-            Cloudinary cloudinary = new Cloudinary(ObjectUtils.asMap(
-                    "cloud_name", "dzgdczkjk",
-                    "api_key", "451129743528376",
-                    "api_secret", "CLrQi7kqM7DPrA5qmDbBkhNbk7E",
-                    "secure", true));
+
+            Cloudinary cloudinary = new Cloudinary(dotenv.get("CLOUDINARY_URL"));
+            cloudinary.config.secure = true;
 
             try
             {
@@ -155,8 +155,6 @@ public class regisBot extends TelegramLongPollingBot {
             {
                 throw new RuntimeException(e);
             }
-
-            
 
             sendMessage.setChatId(chatID);
             sendMessage.setText("Your domain certificate has been received. Please wait for verification");
