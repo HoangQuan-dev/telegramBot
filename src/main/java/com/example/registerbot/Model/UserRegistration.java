@@ -10,8 +10,9 @@ public class UserRegistration extends Document {
     private static final String EMAIL = "email";
     private static final String CREATED_AT = "createdAt";
     private static final String ACTIVATED = ("activated");
+    private static final String DOMAIN = ("domain");
+    private static final String DOMAIN_CERTIFICATE = ("domain_certificate_Url");
     public static final String USER_REGISTRATION = "UserRegistration";
-
 
     public String getId() {
         return getString(_ID);
@@ -27,6 +28,21 @@ public class UserRegistration extends Document {
 
     public void setEmail(String email) {
         put(EMAIL, email);
+    }
+    public String getDomain() {
+        return getString(DOMAIN);
+    }
+
+    public void setDomain(String domain) {
+        put(DOMAIN, domain);
+    }
+
+    public String getDomainCertificate(String domainCertificate) {
+        return getString(DOMAIN_CERTIFICATE);
+    }
+
+    public void setDomainCertificate(String domainCertificate) {
+        put(DOMAIN_CERTIFICATE, domainCertificate);
     }
 
     public Date getCreatedAt() {

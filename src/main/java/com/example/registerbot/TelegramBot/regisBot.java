@@ -47,18 +47,19 @@ public class regisBot extends TelegramLongPollingBot {
     //endregion
     public static String chatID;
     public static UserRegistration userRegis = new UserRegistration();
+    public static String domainUrl;
 
     Dotenv dotenv = Dotenv.load();
 
     @Override
     public String getBotToken() {
-        return "6279609151:AAGDMMPeSNB5Zws5n1kfGfRbxYTVdTN6DtM"; //6279609151:AAGDMMPeSNB5Zws5n1kfGfRbxYTVdTN6DtM
+        return "6279609151:AAGC-SlBJzlqq0W9RRo_gd2Xz-mNejFiKeo";
     }
 
     @Override
     public String getBotUsername() {
         return "regiistBot";
-    } //regiistBot
+    }
 
     @Override
     public void onUpdateReceived(Update update) {
@@ -71,6 +72,11 @@ public class regisBot extends TelegramLongPollingBot {
                 sendMessage.setText("Welcome to Psoft Bot. Please choose register method below\uD83D\uDE4C");
                 String action = "start";
                 InlineKeyboardButton(sendMessage, action);
+            }
+
+            else if (update.getMessage().getText().equals("/newpage")) {
+                sendMessage.setText("You are registering website advertisement." + "\nFirst, give us your <b>Website Logo</b> image");
+                sendMessage.setParseMode(ParseMode.HTML);
             }
 
             else if (update.getMessage().getText().contains("@"))
@@ -86,14 +92,10 @@ public class regisBot extends TelegramLongPollingBot {
                 }
             }
 
-            else if (update.getMessage().getText().contains("https") || update.getMessage().getText().contains("www.") )
-            {
-                if (isValidDomain(update.getMessage().getText()))
-                {
+            else if (update.getMessage().getText().contains("https") || update.getMessage().getText().contains("www.") ) {
+                if (isValidDomain(update.getMessage().getText())) {
                     sendMessage.setText("Need to send picture of Domain Certificate for verification");
-                }
-                else
-                {
+                } else {
                     sendMessage.setText("Domain is invalid. Please try again.");
                 }
             }
@@ -120,44 +122,65 @@ public class regisBot extends TelegramLongPollingBot {
                         "Following this format : [www.*******.***] or [https://******.***]");
             }
 
+            else if (data.contains("_cat"))
+            {
+                sendMessage.setText("Give us your <b>Website Tags</b>" + "\nFor example: #cloting, #jewelry, #lifestyle,...");
+                sendMessage.setParseMode(ParseMode.HTML);
+            }
+
         }
 
         //Check if the message is photo
         else if (update.getMessage().hasPhoto()) {
-            String path = null;
+//            String path = null;
             List<PhotoSize> photos = update.getMessage().getPhoto();
-            String fileId = Objects.requireNonNull(photos.stream().max(Comparator.comparing(PhotoSize::getFileSize))
-                    .orElse(null)).getFileId();
-            GetFile getFile = new GetFile();
-            getFile.setFileId(fileId);
+//            String fileId = Objects.requireNonNull(photos.stream().max(Comparator.comparing(PhotoSize::getFileSize))
+//                    .orElse(null)).getFileId();
+//            GetFile getFile = new GetFile();
+//            getFile.setFileId(fileId);
+//
+//            try {
+//                File file = execute(getFile);
+//                path = String.valueOf(new URL("https://api.telegram.org/file/bot" + getBotToken() + "/" + file.getFilePath()));
+//            }
+//
+//            catch (TelegramApiException e) {
+//                e.printStackTrace();
+//            } catch (MalformedURLException e) {
+//                throw new RuntimeException(e);
+//            }
+//
+//            Cloudinary cloudinary = new Cloudinary(dotenv.get("CLOUDINARY_URL"));
+//            cloudinary.config.secure = true;
+//
+//            try
+//            {
+//                Map uploadResult = cloudinary.uploader().upload(path, ObjectUtils.emptyMap());
+//                domainUrl = uploadResult.get("url").toString();
+//                System.out.println(uploadResult.get("url"));
+//            }
+//
+//            catch (IOException e)
+//            {
+//                throw new RuntimeException(e);
+//            }
 
-            try {
-                File file = execute(getFile);
-                path = String.valueOf(new URL("https://api.telegram.org/file/bot" + getBotToken() + "/" + file.getFilePath()));
-            }
-
-            catch (TelegramApiException e) {
-                e.printStackTrace();
-            } catch (MalformedURLException e) {
-                throw new RuntimeException(e);
-            }
-
-            Cloudinary cloudinary = new Cloudinary(dotenv.get("CLOUDINARY_URL"));
-            cloudinary.config.secure = true;
-
-            try
-            {
-                Map uploadResult = cloudinary.uploader().upload(path, ObjectUtils.emptyMap());
-                System.out.println(uploadResult.get("url"));
-            }
-
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
+            PhotoSize photoSize = photos.get(0);
+            int width = photoSize.getWidth();
+            int height = photoSize.getHeight();
 
             sendMessage.setChatId(chatID);
-            sendMessage.setText("Your domain certificate has been received. Please wait for verification");
+
+            if (width == 90 || height == 51) {
+                String action = "category";
+                sendMessage.setText("Choose your <b>Website Category</b>");
+                sendMessage.setParseMode(ParseMode.HTML);
+                InlineKeyboardButton(sendMessage, action);
+            }
+            else
+            {
+                //sendMessage.setText("Your domain certificate has been received. Please wait for verification");
+            }
         }
 
         //If the message is not photo, reply error message
@@ -178,22 +201,86 @@ public class regisBot extends TelegramLongPollingBot {
         List<List<InlineKeyboardButton>> inlineButtons = new ArrayList<>();
         List<InlineKeyboardButton> inlineKeyboardButtonList = new ArrayList<>();
 
-        if (action.equals("start"))
-        {
-            InlineKeyboardButton email = new InlineKeyboardButton();
-            InlineKeyboardButton domain = new InlineKeyboardButton();
-            email.setText("Email business");
-            domain.setText("Domain");
-            email.setCallbackData("registerEmail");
-            domain.setCallbackData("registerDomain");
+        switch (action) {
+            case "start" -> {
+                InlineKeyboardButton email = new InlineKeyboardButton();
+                InlineKeyboardButton domain = new InlineKeyboardButton();
+                email.setText("Email business");
+                domain.setText("Domain");
+                email.setCallbackData("registerEmail");
+                domain.setCallbackData("registerDomain");
+                inlineKeyboardButtonList.add(email);
+                inlineKeyboardButtonList.add(domain);
+                inlineButtons.add(inlineKeyboardButtonList);
+                inlineKeyboardMarkup.setKeyboard(inlineButtons);
+                sendMessage.setReplyMarkup(inlineKeyboardMarkup);
+            }
+            case "category" -> {
+                InlineKeyboardButton[] cats = new InlineKeyboardButton[10];
+                int i, count = 0;
+                for (i = 0; i < cats.length; i++) {
+                    cats[i] = new InlineKeyboardButton();
+                    cats[i].setText("cat" + i);
+                }
+                for (i = 0; i < cats.length; i++) {
+                    switch (cats[i].getText()) {
+                        case "cat0" -> {
+                            cats[i].setText("E-commerce");
+                            cats[i].setCallbackData("E-commerce_cat");
+                        }
+                        case "cat1" -> {
+                            cats[i].setText("Business");
+                            cats[i].setCallbackData("Business_cat");
+                        }
+                        case "cat2" -> {
+                            cats[i].setText("Blogs");
+                            cats[i].setCallbackData("Blogs_cat");
+                        }
+                        case "cat3" -> {
+                            cats[i].setText("Portfolio");
+                            cats[i].setCallbackData("Portfolio_cat");
+                        }
+                        case "cat4" -> {
+                            cats[i].setText("Social media");
+                            cats[i].setCallbackData("Social_media_cat");
+                        }
+                        case "cat5" -> {
+                            cats[i].setText("Forum");
+                            cats[i].setCallbackData("Forum_cat");
+                        }
+                        case "cat6" -> {
+                            cats[i].setText("News and magazine");
+                            cats[i].setCallbackData("News_and_magazine_cat");
+                        }
+                        case "cat7" -> {
+                            cats[i].setText("Educational");
+                            cats[i].setCallbackData("Educational_cat");
+                        }
+                        case "cat8" -> {
+                            cats[i].setText("Service provider");
+                            cats[i].setCallbackData("Service_provider_cat");
+                        }
+                        case "cat9" -> {
+                            cats[i].setText("Entertainment");
+                            cats[i].setCallbackData("Entertainment_cat");
+                        }
+                    }
 
-            inlineKeyboardButtonList.add(email);
-            inlineKeyboardButtonList.add(domain);
+                    inlineKeyboardButtonList.add(cats[i]);
+                    count++;
+
+                    if (count % 2 == 0) {
+                        inlineButtons.add(inlineKeyboardButtonList);
+                        inlineKeyboardMarkup.setKeyboard(inlineButtons);
+
+                        //Create a new ArrayList for the next set of buttons
+                        inlineKeyboardButtonList = new ArrayList<>();
+                        sendMessage.setReplyMarkup(inlineKeyboardMarkup);
+                    }
+                }
+            }
         }
 
-        inlineButtons.add(inlineKeyboardButtonList);
-        inlineKeyboardMarkup.setKeyboard(inlineButtons);
-        sendMessage.setReplyMarkup(inlineKeyboardMarkup);
     }
 
     public static boolean isValidEmail(String email) throws MessagingException {
@@ -258,6 +345,18 @@ public class regisBot extends TelegramLongPollingBot {
 
         Pattern domainPattern_www = Pattern.compile("((?:[a-z\\d](?:[a-z\\d-]{0,63}[a-z\\d])?|\\*)\\.)+[a-z\\d][a-z\\d-]{0,63}[a-z\\d]");
         Matcher domainMatcher_www = domainPattern_www.matcher(domain);
+
+        if (domainMatcher_https.matches() || domainMatcher_www.matches()) {
+            userRegis.setId(UUID.randomUUID().toString());
+            userRegis.setDomain(domain);
+            userRegis.setDomainCertificate(domainUrl);
+            userRegis.setCreatedAt(LocalDateTime.now());
+            userCollection.insertOne(userRegis);
+        }
+        else
+        {
+            return false;
+        }
 
         return domainMatcher_https.matches() || domainMatcher_www.matches();
     }
