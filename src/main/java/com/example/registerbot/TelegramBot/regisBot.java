@@ -128,6 +128,20 @@ public class regisBot extends TelegramLongPollingBot {
                 sendMessage.setParseMode(ParseMode.HTML);
             }
 
+            else if (data.startsWith("#"))
+            {
+                sendMessage.setText("Write <b>Description</b> about your website. Starts with: ' - '" +
+                        "\n<i>For example: - Your website description...</i>");
+                sendMessage.setParseMode(ParseMode.HTML);
+
+            }
+
+            else if (data.startsWith("-"))
+            {
+                sendMessage.setText("Write <b>Catalogue</b> of your website. Starts with: '_'" +
+                        "\n<i>For example: _Your website catalogue...</i>");
+            }
+
         }
 
         //Check if the message is photo
